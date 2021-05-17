@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	  <db:config name="Database_Config" doc:name="Database Config" doc:id="6159b894-c1f7-40bd-a3b2-1fdd4c19aab9" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
+	  </db:config>
+	<http:listener-config name="order-api-httpListenerConfig">
+        <http:listener-connection host="${http.host}" port="${http.port}" />
+    </http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="ed1b940e-73e8-479e-aaed-c25167827360" file="application-Dev.yaml" />
+	<configuration doc:name="Configuration" doc:id="3cbf1190-01d7-49bc-a3bc-fe03206ba335" defaultErrorHandler-ref="globalError_Handler" />
+	<error-handler name="globalError_Handler" doc:id="9e04e413-b66d-46f8-8976-28923024d050" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ed165821-8848-4b7d-8981-9e541c1cc167" type="GETORDERSID:BAD_SQL_SYNTAX">
+			<set-payload value="#[error.description]" doc:name="Set Payload" doc:id="d2be0a65-c88b-438f-b434-c994ef82d692" />
+			<set-variable value="500" doc:name="Set Variable" doc:id="1d8ca389-9778-4505-8928-d6f009820f2a" variableName="httpStatus"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="efb15b0d-bc58-4331-863d-2819f275cecf" type="PUTORDERS:BAD_SQL_SYNTAX">
+			<set-payload value="#[error.description]" doc:name="Set Payload" doc:id="f97b4cea-2037-4e00-8e37-b968a38dbe89" />
+			<set-variable value="500" doc:name="Set Variable" doc:id="e57c5471-a06c-44ae-8c26-da0cf732ef83" variableName="httpStatus"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="d4a57cf0-31af-4e13-aa57-72c39b801e01" type="PATCHORDERS:BAD_SQL_SYNTAX">
+			<set-payload value="#[error.description]" doc:name="Set Payload" doc:id="c0e42fbb-c102-4794-8a01-299a3480444d" />
+			<set-variable value="500" doc:name="Set Variable" doc:id="7fe4a2e4-f55b-4c7a-8f62-f0fc18fb760e" variableName="httpStatus"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="de445971-3914-4e24-87d1-f9e4c68ba1f6" type="PUTUPDATE:QUERY_EXECUTION">
+			<set-payload value="#[error.description]" doc:name="Set Payload" doc:id="83687f6b-70df-4985-8214-808f44f7f0ed" />
+			<set-variable value="500" doc:name="Set Variable" doc:id="aa4424a1-3b96-42fd-8562-19ece5680364" variableName="httpStatus"/>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7f323899-794e-474f-87a2-26dd8631711b" type="PUTINSERT:QUERY_EXECUTION">
+			<set-payload value="#[error.description]" doc:name="Set Payload" doc:id="e31b0fdd-0d95-41b2-b84a-c4e6023f89b7" />
+			<set-variable value="500" doc:name="Set Variable" doc:id="4f772ab4-5ba6-4e0e-84f8-db03a4550558" variableName="httpStatus"/>
+		</on-error-continue>
+	</error-handler>
+</mule>

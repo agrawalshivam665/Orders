@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	
+	
+	<flow name="getordersflow" doc:id="2fbc9d79-9136-46d9-bbdf-9d28e2191d26" >
+		<db:select doc:name="Select" doc:id="530edbd1-6ffb-4d85-8160-aeaf1a8498b0" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from Orders]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="24fac4e4-c5c5-4806-8cd0-4e5911e5c7d7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map{
+	
+orderNumber: $.orderNumber,
+orderDate: $.orderDate as DateTime {format:"dd/MMM/yyyy"} default null,
+requiredDate: $.requiredDate as  DateTime {format:"dd/MMM/yyyy"} default null,
+shippedDate:  $.shippedDate as  DateTime {format:"dd/MMM/yyyy"} default null,
+orderStatus: $.orderStatus,
+customerNumber: $.customerNumber
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="getorderid" doc:id="9f558f8b-201c-4ba7-9d03-778ac47a425a" >
+		<db:query-single doc:name="Query single" doc:id="6858373e-b675-4907-96ac-b831047b3488" config-ref="Database_Config">
+			<error-mapping sourceType="DB:BAD_SQL_SYNTAX" targetType="GETORDERSID:BAD_SQL_SYNTAX" />
+			<db:sql ><![CDATA[select * from Orders where orderNumber= :orderNumber;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	orderNumber: vars.orderNumber
+}]]]></db:input-parameters>
+		</db:query-single>
+		<ee:transform doc:name="Transform Message" doc:id="6fd00ea3-0ba9-4b59-8987-50fe61577bdf" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+fun date(c) =  c as DateTime{format:"dd/MMM/yyyy"} 
+---
+{
+
+orderNumber: payload.orderNumber,
+orderDate: payload.orderDate as DateTime{format:"dd/MMM/yyyy"} default null ,
+requiredDate: payload.requiredDate as DateTime{format:"dd/MMM/yyyy"} default null ,
+shippedDate: payload.shippedDate as DateTime{format:"dd/MMM/yyyy"} default null,
+orderStatus: payload.orderStatus,
+customerNumber: payload.customerNumber
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<sub-flow name="Sub_Flow" doc:id="d206f14b-4303-414e-9d2b-76136b99704f" >
+		<set-variable doc:name="orderDate" doc:id="3e320a6c-1c45-4b61-9a61-79eba9bee4c5" variableName="orderDate" value='#[payload.orderDate]'/>
+		<set-variable value='#[payload.requiredDate]' doc:name="requiredDate" doc:id="12016566-24bf-43ee-a40d-394869a375f7" variableName="requiredDate"/>
+		<set-variable value='#[payload.shippedDate]' doc:name="shippedDate" doc:id="5e4aca98-99b1-4a43-b620-e9fd805c3631" variableName="shippedDate"/>
+		<set-variable value="#[payload.orderStatus]" doc:name="orderStatus" doc:id="0d7a695b-c05b-4ba7-9826-ab7f8994823c" variableName="orderStatus"/>
+		<set-variable value="#[payload.customerNumber]" doc:name="customerNumber" doc:id="828c83e1-fcee-4096-a6ed-57b51c988217" variableName="customerNumber"/>
+	</sub-flow>
+	<flow name="postFlow" doc:id="a37a3377-d9a3-4e98-a303-816201d93058" >
+		<flow-ref doc:name="Flow Reference" doc:id="ea936369-0db7-463a-a8e2-08d685323baa" name="Sub_Flow"/>
+		<db:insert doc:name="Insert" doc:id="8f66d190-5562-4642-9e74-efd8164e7b24" config-ref="Database_Config">
+			<error-mapping sourceType="DB:BAD_SQL_SYNTAX" targetType="POST:BAD_SQL_SYNTAX" />
+			<db:sql ><![CDATA[insert into Orders(orderDate,requiredDate,shippedDate,orderStatus,customerNumber) values(:orderDate,:requiredDate,:shippedDate,:orderStatus,:customerNumber)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"orderDate": vars.orderDate,
+	"requiredDate": vars.requiredDate,
+	"shippedDate":   vars.shippedDate,
+	"orderStatus": vars.orderStatus,
+	"customerNumber": vars.customerNumber
+	}]]]></db:input-parameters>
+		</db:insert>
+		<db:query-single doc:name="Query single" doc:id="e9a889a9-314e-41f6-bb58-bbb6157b9728" config-ref="Database_Config">
+			<db:sql ><![CDATA[select max(orderNumber) from Orders]]></db:sql>
+		</db:query-single>
+		<ee:transform doc:name="Transform Message" doc:id="18d5eb6f-3a44-45e8-897e-0c58baaff425" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	message: " order has been inserted " 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="201" doc:name="Set Variable" doc:id="cabc5a0a-1e53-488a-b266-0e1a24811ba2" variableName="httpStatus"/>
+	</flow>
+	<flow name="deleteFlow" doc:id="8f051514-6fa0-48aa-a07b-672145812d90" >
+		<db:delete doc:name="Delete" doc:id="4799ec87-4d46-4e6e-9d18-50fae5788456" config-ref="Database_Config">
+			<db:sql ><![CDATA[delete from orders where orderNumber= :orderNumber]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"orderNumber": vars.orderNumber
+	
+	}]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message" doc:id="701848ff-3a17-4b6d-95f1-b47cc1feccab" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Order has been deleted"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="putFlow" doc:id="6b08506b-e130-4b66-b7c3-28138da77f6c" >
+		<flow-ref doc:name="Flow Reference" doc:id="e4d43cd6-325c-4bca-8ae8-b2a41e585e21" name="Sub_Flow"/>
+		<db:query-single doc:name="Query single" doc:id="e8dd8d76-0304-4f30-ad32-64b7c92bb9f8" config-ref="Database_Config">
+			<error-mapping sourceType="DB:BAD_SQL_SYNTAX" targetType="PUTORDERS:BAD_SQL_SYNTAX" />
+			<db:sql><![CDATA[select * from Orders where orderNumber= :orderNumber;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	orderNumber: vars.orderNumber
+}]]]></db:input-parameters>
+		</db:query-single>
+		<choice doc:name="Choice" doc:id="381f905d-6767-435c-a3a5-ca07d45d5285" >
+			<when expression="#[sizeOf(payload)&gt;0]">
+				<db:update doc:name="Update" doc:id="265814f7-c260-44f8-a2f1-bfcb56c80392" config-ref="Database_Config">
+					<error-mapping sourceType="DB:QUERY_EXECUTION" targetType="PUTUPDATE:QUERY_EXECUTION" />
+					<db:sql ><![CDATA[update Orders set orderDate=:orderDate,requiredDate=:requiredDate,shippedDate=:shippedDate,orderStatus=:orderStatus,customerNumber=:customerNumber
+ where orderNumber=:orderNumber;]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{    "orderNumber": vars.orderNumber,
+	 "orderDate": vars.orderDate ,
+	 "requiredDate": vars.requiredDate,
+	 "shippedDate": vars.shippedDate,
+	 "orderStatus": vars.orderStatus,
+	 "customerNumber": vars.customerNumber
+}]]]></db:input-parameters>
+				</db:update>
+				<ee:transform doc:name="Copy_of_Transform Message" doc:id="bbeb4552-1c2b-4e13-bb3d-25808aae2286" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: " the order has been modified" 
+	
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="201" doc:name="Set Variable" doc:id="e9a2c87e-de54-4dfe-a3e0-daa895ef18e5" variableName="httpStatus" />
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="5217c678-3157-4b04-adc6-099d4fa21611" config-ref="Database_Config" >
+					<error-mapping sourceType="DB:QUERY_EXECUTION" targetType="PUTINSERT:QUERY_EXECUTION" />
+					<db:sql ><![CDATA[insert into Orders(orderNumber,orderDate,requiredDate,shippedDate,orderStatus,customerNumber) values(:orderNumber,:orderDate,:requiredDate,:shippedDate,:orderStatus,:customerNumber);]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{   "orderNumber": vars.orderNumber,
+	"orderDate": vars.orderDate,
+	"requiredDate": vars.requiredDate,
+	"shippedDate":   vars.shippedDate,
+	"orderStatus": vars.orderStatus,
+	"customerNumber": vars.customerNumber
+	}]]]></db:input-parameters>
+				</db:insert>
+				<ee:transform doc:name="Transform Message" doc:id="5e32761a-c164-4763-b52d-ca31640274d4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: " the order has been modified and order id is " 
+	
+	}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<set-variable value="201" doc:name="Set Variable" doc:id="f74ace9f-ca19-454d-873e-fc3cb0220443" variableName="httpStatus" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="patchFlow" doc:id="a2c48ed8-24a9-4a3c-8538-bdcc5420870b" >
+		<flow-ref doc:name="Flow Reference" doc:id="6c302091-8775-4770-b7db-55163964983c" name="Sub_Flow" />
+		<db:update doc:name="Update" doc:id="a57c2bbb-df7d-43a6-8101-656fb717df8b" config-ref="Database_Config">
+			<error-mapping sourceType="DB:BAD_SQL_SYNTAX" targetType="PATCHORDERS:BAD_SQL_SYNTAX" />
+			<db:sql ><![CDATA[update Orders set orderDate=:orderDate,requiredDate=:requiredDate,shippedDate=:shippedDate,orderStatus=:orderStatus
+where orderNumber=:orderNumber]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{    "orderNumber": vars.orderNumber,
+	 "orderDate": vars.orderDate,
+	 "requiredDate": vars.requiredDate,
+	 "shippedDate": vars.shippedDate,
+	 "orderStatus": vars.orderStatus
+	 
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="24a0fa9c-3c98-49f5-a817-9c45d56d8e6d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+{
+	message: "the order  is updated"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
