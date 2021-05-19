@@ -85,7 +85,7 @@ customerNumber: payload.customerNumber
 		<ee:transform doc:name="Transform Message" doc:id="18d5eb6f-3a44-45e8-897e-0c58baaff425" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
-output application/java
+output application/json
 ---
 {
 	message: " order has been inserted " 
@@ -167,7 +167,7 @@ output application/json
 output application/json
 ---
 {
-	message: " the order has been modified and order id is " 
+	message: " the order has been modified" 
 	
 	}]]></ee:set-payload>
 			</ee:message>
@@ -181,7 +181,7 @@ output application/json
 		<db:update doc:name="Update" doc:id="a57c2bbb-df7d-43a6-8101-656fb717df8b" config-ref="Database_Config">
 			<error-mapping sourceType="DB:BAD_SQL_SYNTAX" targetType="PATCHORDERS:BAD_SQL_SYNTAX" />
 			<db:sql ><![CDATA[update Orders set orderDate=:orderDate,requiredDate=:requiredDate,shippedDate=:shippedDate,orderStatus=:orderStatus
-where orderNumber=:orderNumber]]></db:sql>
+where orderNumber=:orderNumber;]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{    "orderNumber": vars.orderNumber,
 	 "orderDate": vars.orderDate,
 	 "requiredDate": vars.requiredDate,
