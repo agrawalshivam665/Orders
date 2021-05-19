@@ -11,7 +11,7 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 	
 	<flow name="getordersflow" doc:id="2fbc9d79-9136-46d9-bbdf-9d28e2191d26" >
 		<db:select doc:name="Select" doc:id="530edbd1-6ffb-4d85-8160-aeaf1a8498b0" config-ref="Database_Config">
-			<db:sql ><![CDATA[select * from Orders]]></db:sql>
+			<db:sql ><![CDATA[select * from Orders;]]></db:sql>
 		</db:select>
 		<ee:transform doc:name="Transform Message" doc:id="24fac4e4-c5c5-4806-8cd0-4e5911e5c7d7" >
 			<ee:message >
@@ -80,7 +80,7 @@ customerNumber: payload.customerNumber
 	}]]]></db:input-parameters>
 		</db:insert>
 		<db:query-single doc:name="Query single" doc:id="e9a889a9-314e-41f6-bb58-bbb6157b9728" config-ref="Database_Config">
-			<db:sql ><![CDATA[select max(orderNumber) from Orders]]></db:sql>
+			<db:sql ><![CDATA[select max(orderNumber) from Orders;]]></db:sql>
 		</db:query-single>
 		<ee:transform doc:name="Transform Message" doc:id="18d5eb6f-3a44-45e8-897e-0c58baaff425" >
 			<ee:message >
@@ -96,7 +96,7 @@ output application/java
 	</flow>
 	<flow name="deleteFlow" doc:id="8f051514-6fa0-48aa-a07b-672145812d90" >
 		<db:delete doc:name="Delete" doc:id="4799ec87-4d46-4e6e-9d18-50fae5788456" config-ref="Database_Config">
-			<db:sql ><![CDATA[delete from orders where orderNumber= :orderNumber]]></db:sql>
+			<db:sql ><![CDATA[delete from Orders where orderNumber= :orderNumber;]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
 	"orderNumber": vars.orderNumber
 	
